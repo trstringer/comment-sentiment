@@ -1,4 +1,6 @@
-LANGUAGE_KEY_FILE=./test/language-key-file.txt
+LANGUAGE_KEY_FILE=./tests/language_key
+
+include .env
 
 .PHONY: build
 build: generate
@@ -14,8 +16,16 @@ generate:
 	./scripts/generate.sh
 
 .PHONY: run
-run: generate
-	go run . --language-key $(LANGUAGE_KEY_FILE)
+run:
+	go run . \
+		--language-key $(LANGUAGE_KEY_FILE) \
+		--language-endpoint $(LANGUAGE_ENDPOINT)
+
+.PHONY: debug
+debug:
+	dlv debug . -- \
+		--language-key $(LANGUAGE_KEY_FILE) \
+		--language-endpoint $(LANGUAGE_ENDPOINT)
 
 .PHONY: clean
 clean:

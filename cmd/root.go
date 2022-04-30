@@ -7,16 +7,22 @@ package cmd
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
+
+	"github.com/trstringer/comment-sentiment/pkg/sentimentanalyzer/azure"
 )
 
 var (
-	port            int
-	languageKeyFile string
+	port             int
+	languageKeyFile  string
+	languageKey      string
+	languageEndpoint string
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -34,6 +40,23 @@ to quickly create a Cobra application.`,
 			fmt.Println("Required parameter --language-key not supplied")
 			os.Exit(1)
 		}
+		if languageEndpoint == "" {
+			fmt.Println("Required parameter --language-endpoint not supplied")
+			os.Exit(1)
+		}
+
+		filePath, err := filepath.Abs(languageKeyFile)
+		if err != nil {
+			fmt.Printf("Error getting file path: %v", err)
+			os.Exit(1)
+		}
+
+		languageKeyBytes, err := ioutil.ReadFile(filePath)
+		if err != nil {
+			fmt.Printf("Error reading key file: %v", err)
+			os.Exit(1)
+		}
+		languageKey = string(languageKeyBytes)
 
 		startServer(port)
 	},
@@ -50,7 +73,8 @@ func Execute() {
 
 func init() {
 	rootCmd.Flags().IntVarP(&port, "port", "p", 8080, "port that the server should be listening on")
-	rootCmd.Flags().StringVarP(&languageKeyFile, "language-key", "k", "", "cognitive services language key")
+	rootCmd.Flags().StringVarP(&languageKeyFile, "language-key", "k", "", "cognitive services language key file path")
+	rootCmd.Flags().StringVarP(&languageEndpoint, "language-endpoint", "e", "", "cognitive services language endpoint")
 }
 
 func handleSentimentRequest(resp http.ResponseWriter, req *http.Request) {
@@ -59,9 +83,51 @@ func handleSentimentRequest(resp http.ResponseWriter, req *http.Request) {
 	resp.Write([]byte("hello galaxy"))
 }
 
+func handleManualSentimentRequest(resp http.ResponseWriter, req *http.Request) {
+	fmt.Println("Received manual request to handle sentiment")
+
+	body := req.Body
+	if body == nil {
+		resp.WriteHeader(http.StatusUnprocessableEntity)
+		resp.Write([]byte("Missing request body"))
+		return
+	}
+	defer req.Body.Close()
+
+	commentDataRaw, err := ioutil.ReadAll(body)
+	if err != nil {
+		resp.WriteHeader(http.StatusInternalServerError)
+		resp.Write([]byte("Error reading body of request"))
+		return
+	}
+	commentData := string(commentDataRaw)
+
+	sentimentSvc := azure.NewSentimentService(languageEndpoint, languageKey)
+	analysis, err := sentimentSvc.AnalyzeSentiment(commentData)
+
+	if err != nil {
+		resp.WriteHeader(http.StatusInternalServerError)
+		resp.Write([]byte("Error getting sentiment"))
+		return
+	}
+
+	if analysis == nil {
+		resp.WriteHeader(http.StatusInternalServerError)
+		resp.Write([]byte("Unexpectedly no analysis returned"))
+		return
+	}
+
+	resp.Write([]byte(fmt.Sprintf(
+		"Analysis: %s - Confidence: %.2f",
+		analysis.Sentiment,
+		analysis.Confidence,
+	)))
+}
+
 func startServer(port int) {
 	fmt.Printf("Starting server on port %d\n", port)
 
 	http.HandleFunc("/", handleSentimentRequest)
+	http.HandleFunc("/manual", handleManualSentimentRequest)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 }
