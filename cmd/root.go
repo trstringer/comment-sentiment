@@ -6,6 +6,7 @@ Copyright © 2022 Thomas Stringer <thomas@trstringer.com>
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	gh "github.com/trstringer/comment-sentiment/pkg/github"
 	"github.com/trstringer/comment-sentiment/pkg/sentimentanalyzer/azure"
 )
 
@@ -80,7 +82,34 @@ func init() {
 func handleSentimentRequest(resp http.ResponseWriter, req *http.Request) {
 	fmt.Println("Received request to handle sentiment")
 
-	resp.Write([]byte("hello galaxy"))
+	if req.Method != http.MethodPost {
+		resp.WriteHeader(http.StatusBadRequest)
+		resp.Write([]byte("Only POST supported"))
+		return
+	}
+
+	body := req.Body
+	if body == nil {
+		resp.WriteHeader(http.StatusBadRequest)
+		resp.Write([]byte("Missing request body"))
+		return
+	}
+	defer req.Body.Close()
+
+	payloadRaw, err := ioutil.ReadAll(body)
+	if err != nil {
+		resp.WriteHeader(http.StatusInternalServerError)
+		resp.Write([]byte("Error reading body of request"))
+		return
+	}
+	issueCommentPayload := gh.CommentPayload{}
+	if err = json.Unmarshal(payloadRaw, &issueCommentPayload); err != nil {
+		resp.WriteHeader(http.StatusInternalServerError)
+		resp.Write([]byte("Error unmarshalling payload"))
+		return
+	}
+
+	resp.Write([]byte(fmt.Sprintf("Your body: %s", issueCommentPayload.Comment.Body)))
 }
 
 func handleManualSentimentRequest(resp http.ResponseWriter, req *http.Request) {
@@ -88,7 +117,7 @@ func handleManualSentimentRequest(resp http.ResponseWriter, req *http.Request) {
 
 	body := req.Body
 	if body == nil {
-		resp.WriteHeader(http.StatusUnprocessableEntity)
+		resp.WriteHeader(http.StatusBadRequest)
 		resp.Write([]byte("Missing request body"))
 		return
 	}
