@@ -1,5 +1,6 @@
 tests/language_key
 .env
+dist/
 
 # Local .terraform directories
 **/.terraform/*

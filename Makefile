@@ -29,4 +29,4 @@ debug:
 
 .PHONY: clean
 clean:
-	rmdir ./dist
+	rm -rf ./dist
