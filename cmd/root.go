@@ -102,14 +102,14 @@ func handleSentimentRequest(resp http.ResponseWriter, req *http.Request) {
 		resp.Write([]byte("Error reading body of request"))
 		return
 	}
-	issueCommentPayload := gh.CommentPayload{}
-	if err = json.Unmarshal(payloadRaw, &issueCommentPayload); err != nil {
+	commentPayload := gh.CommentPayload{}
+	if err = json.Unmarshal(payloadRaw, &commentPayload); err != nil {
 		resp.WriteHeader(http.StatusInternalServerError)
 		resp.Write([]byte("Error unmarshalling payload"))
 		return
 	}
 
-	resp.Write([]byte(fmt.Sprintf("Your body: %s", issueCommentPayload.Comment.Body)))
+	resp.Write([]byte(fmt.Sprintf("Your body: %s", commentPayload.Comment.Body)))
 }
 
 func handleManualSentimentRequest(resp http.ResponseWriter, req *http.Request) {
