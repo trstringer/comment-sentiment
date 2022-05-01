@@ -25,6 +25,9 @@ var (
 	languageKeyFile  string
 	languageKey      string
 	languageEndpoint string
+	appID            int
+	appKeyFile       string
+	appKey           []byte
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -49,16 +52,27 @@ to quickly create a Cobra application.`,
 
 		filePath, err := filepath.Abs(languageKeyFile)
 		if err != nil {
-			fmt.Printf("Error getting file path: %v", err)
+			fmt.Printf("Error getting file path: %v\n", err)
 			os.Exit(1)
 		}
 
 		languageKeyBytes, err := ioutil.ReadFile(filePath)
 		if err != nil {
-			fmt.Printf("Error reading key file: %v", err)
+			fmt.Printf("Error reading key file: %v\n", err)
 			os.Exit(1)
 		}
 		languageKey = string(languageKeyBytes)
+
+		if appID <= 0 {
+			fmt.Println("Incorrect GitHub App ID")
+			os.Exit(1)
+		}
+
+		appKey, err = ioutil.ReadFile(appKeyFile)
+		if err != nil {
+			fmt.Printf("Error reading app key file: %v\n", err)
+			os.Exit(1)
+		}
 
 		startServer(port)
 	},
@@ -75,8 +89,10 @@ func Execute() {
 
 func init() {
 	rootCmd.Flags().IntVarP(&port, "port", "p", 8080, "port that the server should be listening on")
-	rootCmd.Flags().StringVarP(&languageKeyFile, "language-key", "k", "", "cognitive services language key file path")
+	rootCmd.Flags().StringVarP(&languageKeyFile, "language-keyfile", "l", "", "cognitive services language key file path")
 	rootCmd.Flags().StringVarP(&languageEndpoint, "language-endpoint", "e", "", "cognitive services language endpoint")
+	rootCmd.Flags().IntVar(&appID, "app-id", 0, "GitHub App ID")
+	rootCmd.Flags().StringVarP(&appKeyFile, "app-keyfile", "a", "", "GitHub App key file path")
 }
 
 func handleSentimentRequest(resp http.ResponseWriter, req *http.Request) {
@@ -109,7 +125,27 @@ func handleSentimentRequest(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	resp.Write([]byte(fmt.Sprintf("Your body: %s", commentPayload.Comment.Body)))
+	client, err := gh.NewInstallationGitHubClient(appID, appKey, commentPayload.Repository.Owner)
+	if err != nil {
+		resp.WriteHeader(http.StatusInternalServerError)
+		resp.Write([]byte("Error creating GitHub client"))
+		return
+	}
+	sentimentSvc := azure.NewSentimentService(languageEndpoint, languageKey)
+	analysis, err := sentimentSvc.AnalyzeSentiment(commentPayload.Comment.Body)
+	if err != nil {
+		resp.WriteHeader(http.StatusInternalServerError)
+		resp.Write([]byte("Error getting sentiment"))
+		return
+	}
+	updatedComment, err := gh.UpdateCommentWithSentiment(commentPayload.Comment.Body, *analysis)
+	if err := commentPayload.UpdateComment(client, updatedComment); err != nil {
+		resp.WriteHeader(http.StatusInternalServerError)
+		resp.Write([]byte(fmt.Sprintf("%v", err)))
+		return
+	}
+
+	resp.Write([]byte("success"))
 }
 
 func handleManualSentimentRequest(resp http.ResponseWriter, req *http.Request) {

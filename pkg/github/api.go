@@ -30,10 +30,43 @@ func generateJWT(appID int, privateKey []byte) (string, error) {
 	return tokenSigned, nil
 }
 
-func newGitHubClient(jwt string) *ghapi.Client {
+func newGitHubClient(token string) *ghapi.Client {
 	tokenSource := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: jwt},
+		&oauth2.Token{AccessToken: token},
 	)
 	oauthClient := oauth2.NewClient(context.Background(), tokenSource)
 	return ghapi.NewClient(oauthClient)
+}
+
+// NewInstallationGitHubClient creates a new client for the installation.
+func NewInstallationGitHubClient(appID int, privateKey []byte, repoOwner RepositoryOwner) (*ghapi.Client, error) {
+	jwt, err := generateJWT(appID, privateKey)
+	if err != nil {
+		return nil, fmt.Errorf("error generating JWT: %w", err)
+	}
+
+	client := newGitHubClient(jwt)
+	installations, _, err := client.Apps.ListInstallations(context.Background(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting app installations: %w", err)
+	}
+
+	var installationID int64 = -1
+	for _, installation := range installations {
+		if installation.GetAccount().GetLogin() == repoOwner.Login {
+			installationID = installation.GetID()
+		}
+	}
+
+	if installationID < 0 {
+		return nil, fmt.Errorf("unable to find app installation")
+	}
+
+	installationToken, _, err := client.Apps.CreateInstallationToken(
+		context.Background(),
+		installationID,
+		nil,
+	)
+
+	return newGitHubClient(installationToken.GetToken()), nil
 }

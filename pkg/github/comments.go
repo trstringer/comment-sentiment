@@ -2,6 +2,8 @@ package github
 
 import (
 	"fmt"
+
+	ghapi "github.com/google/go-github/v44/github"
 )
 
 // CommentType returns the type of comment that it is.
@@ -16,7 +18,7 @@ func (c CommentPayload) CommentType() (CommentType, error) {
 }
 
 // UpdateComment updates the comment payload text.
-func (c CommentPayload) UpdateComment(newComment string) error {
+func (c CommentPayload) UpdateComment(client *ghapi.Client, newComment string) error {
 	commentType, err := c.CommentType()
 	if err != nil {
 		return fmt.Errorf("error trying to update comment: %w", err)

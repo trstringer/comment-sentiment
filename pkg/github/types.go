@@ -1,5 +1,9 @@
 package github
 
+import (
+	ghapi "github.com/google/go-github/v44/github"
+)
+
 // CommentType allows the ability to distinguish different comment types.
 type CommentType int
 
@@ -20,6 +24,17 @@ type CommentPayload struct {
 	Comment     Comment      `json:"comment"`
 	Issue       *Issue       `json:"issue,omitempty"`
 	PullRequest *PullRequest `json:"pull_request,omitempty"`
+	Repository  Repository   `json:"repository"`
+}
+
+// Repository represents a GitHub repo.
+type Repository struct {
+	Owner RepositoryOwner `json:"owner"`
+}
+
+// RepositoryOwner represents the repo owner.
+type RepositoryOwner struct {
+	Login string `json:"login"`
 }
 
 // Comment is the comment on a GitHub issue from the payload.
@@ -37,4 +52,10 @@ type Issue struct {
 // PullRequest represents a GitHub pull request.
 type PullRequest struct {
 	URL string `json:"url"`
+}
+
+// App is a representation of the GitHub App.
+type App struct {
+	client *ghapi.Client
+	appID  int
 }

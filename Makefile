@@ -18,14 +18,18 @@ generate:
 .PHONY: run
 run:
 	go run . \
-		--language-key $(LANGUAGE_KEY_FILE) \
-		--language-endpoint $(LANGUAGE_ENDPOINT)
+		--language-keyfile $(LANGUAGE_KEY_FILE) \
+		--language-endpoint $(LANGUAGE_ENDPOINT) \
+		--app-id 5 \
+		--app-keyfile $(LANGUAGE_KEY_FILE)
 
 .PHONY: debug
 debug:
 	dlv debug . -- \
-		--language-key $(LANGUAGE_KEY_FILE) \
-		--language-endpoint $(LANGUAGE_ENDPOINT)
+		--language-keyfile $(LANGUAGE_KEY_FILE) \
+		--language-endpoint $(LANGUAGE_ENDPOINT) \
+		--app-id 5 \
+		--app-keyfile $(LANGUAGE_KEY_FILE)
 
 .PHONY: clean
 clean:
