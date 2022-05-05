@@ -18,6 +18,7 @@ import (
 
 	gh "github.com/trstringer/comment-sentiment/pkg/github"
 	"github.com/trstringer/comment-sentiment/pkg/sentimentanalyzer/azure"
+	"github.com/trstringer/comment-sentiment/pkg/version"
 )
 
 var (
@@ -28,6 +29,7 @@ var (
 	appID            int
 	appKeyFile       string
 	appKey           []byte
+	showVersion      bool
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -41,6 +43,11 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if showVersion {
+			fmt.Println(version.Version)
+			os.Exit(0)
+		}
+
 		if languageKeyFile == "" {
 			fmt.Println("Required parameter --language-key not supplied")
 			os.Exit(1)
@@ -93,6 +100,7 @@ func init() {
 	rootCmd.Flags().StringVarP(&languageEndpoint, "language-endpoint", "e", "", "cognitive services language endpoint")
 	rootCmd.Flags().IntVar(&appID, "app-id", 0, "GitHub App ID")
 	rootCmd.Flags().StringVarP(&appKeyFile, "app-keyfile", "a", "", "GitHub App key file path")
+	rootCmd.Flags().BoolVarP(&showVersion, "version", "v", false, "list the version")
 }
 
 func handleSentimentRequest(resp http.ResponseWriter, req *http.Request) {

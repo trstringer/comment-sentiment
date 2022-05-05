@@ -1,6 +1,6 @@
 LANGUAGE_KEY_FILE=./tests/language_key
-
-include .env
+LANGUAGE_ENDPOINT=$(shell cat ./tests/language_endpoint)
+INFRA_OUT_PLAN_FILE=./infra.out
 
 .PHONY: build
 build: generate
@@ -19,7 +19,7 @@ generate:
 run:
 	go run . \
 		--language-keyfile $(LANGUAGE_KEY_FILE) \
-		--language-endpoint $(LANGUAGE_ENDPOINT) \
+		--language-endpoint $(shell terraform -chdir=./infra output -raw language_endpoint) \
 		--app-id 5 \
 		--app-keyfile $(LANGUAGE_KEY_FILE)
 
@@ -27,10 +27,41 @@ run:
 debug:
 	dlv debug . -- \
 		--language-keyfile $(LANGUAGE_KEY_FILE) \
-		--language-endpoint $(LANGUAGE_ENDPOINT) \
+		--language-endpoint $(shell terraform -chdir=./infra output -raw language_endpoint) \
 		--app-id 5 \
 		--app-keyfile $(LANGUAGE_KEY_FILE)
 
 .PHONY: clean
 clean:
 	rm -rf ./dist
+
+.PHONY: infra-plan
+infra-plan:
+	terraform -chdir=./infra plan
+
+.PHONY: infra-apply
+infra-apply:
+	terraform -chdir=./infra apply -auto-approve
+
+.PHONY: infra-clean
+infra-clean:
+	terraform -chdir=./infra destroy -auto-approve
+
+.PHONY: image-build
+image-build: build
+	docker build -t \
+		$$(terraform -chdir=./infra output -raw acr_endpoint)/comment-sentiment:$$(./dist/comment-sentiment -v) .
+
+.PHONY: image-push
+image-push:
+	ACR=$$(terraform -chdir=./infra output -raw acr_endpoint) && \
+	az acr login -n $$ACR && \
+	docker push $$ACR/comment-sentiment:$$(./dist/comment-sentiment -v)
+
+.PHONY: deploy
+deploy:
+	./scripts/deploy.sh
+
+.PHONY: chart-lint
+chart-lint:
+	./scripts/chart_lint.sh

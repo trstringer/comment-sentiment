@@ -1,4 +1,5 @@
 tests/language_key
+tests/language_endpoint
 .env
 dist/
 
