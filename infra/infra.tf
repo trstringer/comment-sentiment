@@ -47,6 +47,12 @@ resource "azurerm_container_registry" "acr" {
   sku = "Basic"
 }
 
+resource "azurerm_user_assigned_identity" "aksuser" {
+  name = local.resource_name
+  resource_group_name = azurerm_resource_group.rg.name
+  location = var.location
+}
+
 resource "azurerm_kubernetes_cluster" "aks" {
   name = local.resource_name
   resource_group_name = azurerm_resource_group.rg.name
@@ -59,7 +65,8 @@ resource "azurerm_kubernetes_cluster" "aks" {
   }
 
   identity {
-    type = "SystemAssigned"
+    type = "UserAssigned"
+    identity_ids = [azurerm_user_assigned_identity.aksuser.id]
   }
 
   dns_prefix = local.resource_name
@@ -86,12 +93,7 @@ resource "azurerm_key_vault" "akv" {
   access_policy {
     tenant_id = data.azurerm_client_config.current.tenant_id
     object_id = data.azurerm_client_config.current.object_id
-    secret_permissions = ["Get", "List", "Set"]
-  }
-  access_policy {
-    tenant_id = azurerm_kubernetes_cluster.aks.identity[0].tenant_id
-    object_id = azurerm_kubernetes_cluster.aks.identity[0].principal_id
-    secret_permissions = ["Get"]
+    secret_permissions = ["Get", "List", "Set", "Delete", "Purge"]
   }
 }
 
@@ -111,4 +113,12 @@ output "language_endpoint" {
 
 output "resource_name" {
   value = local.resource_name
+}
+
+output "tenant_id" {
+  value = data.azurerm_client_config.current.tenant_id
+}
+
+output "cluster_identity_id" {
+  value = azurerm_user_assigned_identity.aksuser.client_id
 }

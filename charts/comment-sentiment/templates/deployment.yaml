@@ -24,3 +24,14 @@ spec:
             - name: http
               containerPort: {{ .Values.port }}
               protocol: TCP
+          volumeMounts:
+            - name: secretsstore
+              mountPath: "/mnt/secrets-store"
+              readOnly: true
+      volumes:
+        - name: secretsstore
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: spc
