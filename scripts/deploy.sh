@@ -4,7 +4,10 @@ ACR=$(terraform -chdir=./infra output -raw acr_endpoint)
 RESOURCE_NAME=$(terraform -chdir=./infra output -raw resource_name)
 VERSION=$(./dist/comment-sentiment -v)
 TENANT_ID=$(terraform -chdir=./infra output -raw tenant_id)
-CLUSTER_USER_ID=$(terraform -chdir=./infra output -raw cluster_identity_id)
+CLUSTER_USER_ID=$(az aks show \
+    -g "$RESOURCE_NAME" \
+    -n "$RESOURCE_NAME" \
+    --query "addonProfiles.azureKeyvaultSecretsProvider.identity.clientId" -o tsv)
 
 az aks get-credentials -g $RESOURCE_NAME -n $RESOURCE_NAME --overwrite-existing
 

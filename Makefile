@@ -41,11 +41,11 @@ infra-plan:
 
 .PHONY: infra-apply
 infra-apply:
-	terraform -chdir=./infra apply -auto-approve
+	./scripts/infra_apply.sh
 
 .PHONY: infra-clean
 infra-clean:
-	terraform -chdir=./infra destroy -auto-approve
+	./scripts/infra_clean.sh
 
 .PHONY: image-build
 image-build: build
@@ -53,7 +53,7 @@ image-build: build
 		$$(terraform -chdir=./infra output -raw acr_endpoint)/comment-sentiment:$$(./dist/comment-sentiment -v) .
 
 .PHONY: image-push
-image-push:
+image-push: image-build
 	ACR=$$(terraform -chdir=./infra output -raw acr_endpoint) && \
 	az acr login -n $$ACR && \
 	docker push $$ACR/comment-sentiment:$$(./dist/comment-sentiment -v)

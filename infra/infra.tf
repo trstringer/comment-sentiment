@@ -78,9 +78,10 @@ resource "azurerm_kubernetes_cluster" "aks" {
 
 resource "azurerm_role_assignment" "acraks" {
   principal_id = azurerm_kubernetes_cluster.aks.kubelet_identity[0].object_id
+  # principal_id = azurerm_user_assigned_identity.aksuser.principal_id
   role_definition_name = "AcrPull"
   scope = azurerm_container_registry.acr.id
-  skip_service_principal_aad_check = true
+  # skip_service_principal_aad_check = true
 }
 
 resource "azurerm_key_vault" "akv" {
