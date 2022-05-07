@@ -18,8 +18,14 @@ spec:
         - name: sentiment-analyzer
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/var/app/comment-sentiment"]
           args:
             - "--language-keyfile"
+            - "/mnt/secrets-store/languagekey"
+            - "--language-endpoint"
+            - "{{ .Values.languageEndpoint }}"
+            - "--app-id"
+            - "{{ .Values.github.appID }}"
           ports:
             - name: http
               containerPort: {{ .Values.port }}

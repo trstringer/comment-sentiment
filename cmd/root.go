@@ -56,6 +56,10 @@ to quickly create a Cobra application.`,
 			fmt.Println("Required parameter --language-endpoint not supplied")
 			os.Exit(1)
 		}
+		if appKeyFile == "" {
+			fmt.Println("Required parameter --app-keyfile not supplied")
+			os.Exit(1)
+		}
 
 		filePath, err := filepath.Abs(languageKeyFile)
 		if err != nil {
@@ -71,7 +75,7 @@ to quickly create a Cobra application.`,
 		languageKey = string(languageKeyBytes)
 
 		if appID <= 0 {
-			fmt.Println("Incorrect GitHub App ID")
+			fmt.Println("Required parameter --app-id not supplied or incorrect value")
 			os.Exit(1)
 		}
 
