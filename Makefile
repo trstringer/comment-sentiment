@@ -65,3 +65,7 @@ deploy:
 .PHONY: chart-lint
 chart-lint:
 	./scripts/chart_lint.sh
+
+.PHONY: dns
+dns:
+	./scripts/dns.sh

@@ -29,3 +29,15 @@ helm upgrade \
     --set languageEndpoint=$LANGUAGE_ENDPOINT \
     --set github.appID=$GITHUB_APP_ID \
     comment-sentiment ./charts/comment-sentiment
+
+ENVOY_IP_ADDRESS=$(kubectl get svc \
+    -l "app.kubernetes.io/component=envoy" \
+    -o jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}')
+
+DNS_ZONE_NAME=$(terraform -chdir=./infra/dns output -raw dns_zone_name)
+DNS_RESOURCE_GROUP=$(terraform -chdir=./infra/dns output -raw dns_resource_group_name)
+
+terraform -chdir=./infra/dns_records apply -auto-approve \
+    -var="dnszone_name=$DNS_ZONE_NAME" \
+    -var="dnszone_resource_group_name=$DNS_RESOURCE_GROUP" \
+    -var="ip_address=$ENVOY_IP_ADDRESS"
