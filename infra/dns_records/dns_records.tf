@@ -12,7 +12,7 @@ data "azurerm_dns_zone" "dnszone" {
 }
 
 resource "azurerm_dns_a_record" "arecord" {
-  name = "a_record"
+  name = "@"
   zone_name = data.azurerm_dns_zone.dnszone.name
   resource_group_name = data.azurerm_dns_zone.dnszone.resource_group_name
   ttl = 300

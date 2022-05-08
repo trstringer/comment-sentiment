@@ -14,6 +14,8 @@ CLUSTER_USER_ID=$(az aks show \
     -n "$RESOURCE_NAME" \
     --query "addonProfiles.azureKeyvaultSecretsProvider.identity.clientId" -o tsv)
 LANGUAGE_ENDPOINT=$(terraform -chdir=./infra output -raw language_endpoint)
+DNS_ZONE_NAME=$(terraform -chdir=./infra/dns output -raw dns_zone_name)
+DNS_RESOURCE_GROUP=$(terraform -chdir=./infra/dns output -raw dns_resource_group_name)
 
 az aks get-credentials -g $RESOURCE_NAME -n $RESOURCE_NAME --overwrite-existing
 
@@ -28,14 +30,12 @@ helm upgrade \
     --set keyvault.userID=$CLUSTER_USER_ID \
     --set languageEndpoint=$LANGUAGE_ENDPOINT \
     --set github.appID=$GITHUB_APP_ID \
+    --set fqdn=$DNS_ZONE_NAME \
     comment-sentiment ./charts/comment-sentiment
 
 ENVOY_IP_ADDRESS=$(kubectl get svc \
     -l "app.kubernetes.io/component=envoy" \
     -o jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}')
-
-DNS_ZONE_NAME=$(terraform -chdir=./infra/dns output -raw dns_zone_name)
-DNS_RESOURCE_GROUP=$(terraform -chdir=./infra/dns output -raw dns_resource_group_name)
 
 terraform -chdir=./infra/dns_records apply -auto-approve \
     -var="dnszone_name=$DNS_ZONE_NAME" \

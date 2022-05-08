@@ -1,0 +1,21 @@
+apiVersion: projectcontour.io/v1
+kind: HTTPProxy
+metadata:
+  name: routing
+spec:
+  virtualhost:
+    fqdn: "{{ .Values.fqdn }}"
+  routes:
+    - conditions:
+      - prefix: /test
+      services:
+        - name: httpbin
+          port: 80
+      pathRewritePolicy:
+        replacePrefix:
+          - replacement: /
+    - conditions:
+      - prefix: /comments
+      services:
+        - name: comment-sentiment
+          port: 80
