@@ -4,3 +4,6 @@ image:
   pullPolicy: Always
 
 port: 8080
+
+cert-manager:
+  installCRDs: true

@@ -2,5 +2,8 @@ dependencies:
 - name: contour
   repository: https://charts.bitnami.com/bitnami
   version: 7.8.0
-digest: sha256:b8b68d8ed3d59afb0e730fdb5bdc1b2146b51824db90aa1a7b017696e56017f3
-generated: "2022-05-04T18:18:49.057520741-04:00"
+- name: cert-manager
+  repository: https://charts.jetstack.io
+  version: v1.8.0
+digest: sha256:5bfa97378ba714c5fce6aee977dc72be1fa240b618fca088a1a84dd555092e56
+generated: "2022-05-09T08:01:56.812885927-04:00"

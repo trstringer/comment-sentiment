@@ -5,6 +5,8 @@ metadata:
 spec:
   virtualhost:
     fqdn: "{{ .Values.fqdn }}"
+    tls:
+      secretName: proxytls
   routes:
     - conditions:
       - prefix: /test
