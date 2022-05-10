@@ -26,6 +26,8 @@ spec:
             - "{{ .Values.languageEndpoint }}"
             - "--app-id"
             - "{{ .Values.github.appID }}"
+            - "--app-keyfile"
+            - "/mnt/secrets-store/happyossprivatekey"
           ports:
             - name: http
               containerPort: {{ .Values.port }}

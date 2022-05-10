@@ -1,7 +1,7 @@
 #!/bin/bash
 
-if [[ -z "$GITHUB_APP_ID" ]]; then
-    echo "GITHUB_APP_ID must be set to the registered GitHub app ID"
+if [[ -z "$KEYVAULT" ]]; then
+    echo "KEYVAULT needs to be set to the initial key vault with app specs"
     exit 1
 fi
 
@@ -16,6 +16,10 @@ CLUSTER_USER_ID=$(az aks show \
 LANGUAGE_ENDPOINT=$(terraform -chdir=./infra output -raw language_endpoint)
 DNS_ZONE_NAME=$(terraform -chdir=./infra/dns output -raw dns_zone_name)
 DNS_RESOURCE_GROUP=$(terraform -chdir=./infra/dns output -raw dns_resource_group_name)
+GITHUB_APP_ID=$(az keyvault secret show \
+    --vault-name $KEYVAULT \
+    --name happyossappid \
+    --query value -o tsv)
 
 az aks get-credentials -g $RESOURCE_NAME -n $RESOURCE_NAME --overwrite-existing
 

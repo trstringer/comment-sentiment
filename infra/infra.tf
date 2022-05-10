@@ -21,6 +21,10 @@ variable "location" {
   default = "eastus"
 }
 
+variable "privatekey" {
+  sensitive = true
+}
+
 resource "azurerm_resource_group" "rg" {
   name = local.resource_name
   location = var.location
@@ -102,6 +106,12 @@ resource "azurerm_key_vault_secret" "languagekeysecret" {
   key_vault_id = azurerm_key_vault.akv.id
   name = "languagekey"
   value = azurerm_cognitive_account.textanalytics.primary_access_key
+}
+
+resource "azurerm_key_vault_secret" "privatekeysecret" {
+  key_vault_id = azurerm_key_vault.akv.id
+  name = "happyossprivatekey"
+  value = var.privatekey
 }
 
 output "acr_endpoint" {
