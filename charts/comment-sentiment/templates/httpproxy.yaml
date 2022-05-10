@@ -21,3 +21,6 @@ spec:
       services:
         - name: comment-sentiment
           port: 80
+      pathRewritePolicy:
+        replacePrefix:
+          - replacement: /

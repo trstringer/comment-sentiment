@@ -19,8 +19,23 @@ DNS_RESOURCE_GROUP=$(terraform -chdir=./infra/dns output -raw dns_resource_group
 
 az aks get-credentials -g $RESOURCE_NAME -n $RESOURCE_NAME --overwrite-existing
 
+helm repo add jetstack https://charts.jetstack.io
+helm repo add bitnami https://charts.bitnami.com/bitnami
 helm repo update
-helm dependency build ./charts/comment-sentiment
+
+# Install the dependencies first.
+helm upgrade cert-manager jetstack/cert-manager \
+    --install \
+    --namespace cert-manager \
+    --create-namespace \
+    --version "v1.8.0" \
+    --set installCRDs=true
+helm upgrade contour bitnami/contour \
+    --install \
+    --namespace projectcontour \
+    --create-namespace \
+    --version "7.8.0"
+
 helm upgrade \
     --install \
     --set image.repository=$ACR/comment-sentiment \
@@ -33,7 +48,7 @@ helm upgrade \
     --set fqdn=$DNS_ZONE_NAME \
     comment-sentiment ./charts/comment-sentiment
 
-ENVOY_IP_ADDRESS=$(kubectl get svc \
+ENVOY_IP_ADDRESS=$(kubectl get svc -n projectcontour \
     -l "app.kubernetes.io/component=envoy" \
     -o jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}')
 
