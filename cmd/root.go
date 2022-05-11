@@ -113,6 +113,7 @@ func handleSentimentRequest(resp http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodPost {
 		resp.WriteHeader(http.StatusBadRequest)
 		resp.Write([]byte("Only POST supported"))
+		fmt.Println("Method is not a post")
 		return
 	}
 
@@ -120,6 +121,7 @@ func handleSentimentRequest(resp http.ResponseWriter, req *http.Request) {
 	if body == nil {
 		resp.WriteHeader(http.StatusBadRequest)
 		resp.Write([]byte("Missing request body"))
+		fmt.Println("Body is nil")
 		return
 	}
 	defer req.Body.Close()
@@ -128,12 +130,14 @@ func handleSentimentRequest(resp http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		resp.WriteHeader(http.StatusInternalServerError)
 		resp.Write([]byte("Error reading body of request"))
+		fmt.Printf("Error reading body: %v\n", err)
 		return
 	}
 	commentPayload := gh.CommentPayload{}
 	if err = json.Unmarshal(payloadRaw, &commentPayload); err != nil {
 		resp.WriteHeader(http.StatusInternalServerError)
 		resp.Write([]byte("Error unmarshalling payload"))
+		fmt.Printf("Error unmarshalling payload: %v\n", err)
 		return
 	}
 
@@ -141,6 +145,7 @@ func handleSentimentRequest(resp http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		resp.WriteHeader(http.StatusInternalServerError)
 		resp.Write([]byte("Error creating GitHub client"))
+		fmt.Printf("Error creating github installation client: %v\n", err)
 		return
 	}
 	sentimentSvc := azure.NewSentimentService(languageEndpoint, languageKey)
@@ -148,12 +153,14 @@ func handleSentimentRequest(resp http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		resp.WriteHeader(http.StatusInternalServerError)
 		resp.Write([]byte("Error getting sentiment"))
+		fmt.Printf("Error get analysis sentiment: %v\n", err)
 		return
 	}
 	updatedComment, err := gh.UpdateCommentWithSentiment(commentPayload.Comment.Body, *analysis)
 	if err := commentPayload.UpdateComment(client, updatedComment); err != nil {
 		resp.WriteHeader(http.StatusInternalServerError)
 		resp.Write([]byte(fmt.Sprintf("%v", err)))
+		fmt.Printf("Error updating comment: %v\n", err)
 		return
 	}
 
