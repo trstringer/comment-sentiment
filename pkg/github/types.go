@@ -19,17 +19,29 @@ const (
 )
 
 // CommentPayload represents the payload from GitHub for an issue comment.
+// For more info or to see other fields that might be available, take a look
+// at the webhook events and payloads for:
+//   issue_comment: https://docs.github.com/en/developers/webhooks-and-events/webhooks/webhook-events-and-payloads#issue_comment
+//   pull_request_review_comment: https://docs.github.com/en/developers/webhooks-and-events/webhooks/webhook-events-and-payloads#pull_request_review_comment
 type CommentPayload struct {
 	Action      string       `json:"action"`
 	Comment     Comment      `json:"comment"`
 	Issue       *Issue       `json:"issue,omitempty"`
 	PullRequest *PullRequest `json:"pull_request,omitempty"`
 	Repository  Repository   `json:"repository"`
+	Sender      Sender       `json:"sender"`
+}
+
+// Sender represents the sender of the action from the GitHub API.
+type Sender struct {
+	Login string `json:"login"`
 }
 
 // Repository represents a GitHub repo.
 type Repository struct {
-	Owner RepositoryOwner `json:"owner"`
+	FullName string          `json:"full_name"`
+	Name     string          `json:"name"`
+	Owner    RepositoryOwner `json:"owner"`
 }
 
 // RepositoryOwner represents the repo owner.
@@ -37,15 +49,22 @@ type RepositoryOwner struct {
 	Login string `json:"login"`
 }
 
+// CommentUser represents the user of the comment.
+type CommentUser struct {
+	Login string `json:"login"`
+}
+
 // Comment is the comment on a GitHub issue from the payload.
 type Comment struct {
-	Body                string `json:"body"`
-	ID                  int    `json:"id"`
-	PullRequestReviewID *int   `json:"pull_request_review_id,omitempty"`
+	Body                string      `json:"body"`
+	ID                  int64       `json:"id"`
+	PullRequestReviewID *int64      `json:"pull_request_review_id,omitempty"`
+	CommentUser         CommentUser `json:"user"`
 }
 
 // Issue represents a GitHub issue.
 type Issue struct {
+	ID  int64  `json:"id"`
 	URL string `json:"url"`
 }
 

@@ -9,11 +9,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 
 	gh "github.com/trstringer/comment-sentiment/pkg/github"
@@ -108,12 +109,12 @@ func init() {
 }
 
 func handleSentimentRequest(resp http.ResponseWriter, req *http.Request) {
-	fmt.Println("Received request to handle sentiment")
+	log.Info().Msg("Received sentiment handle request")
 
 	if req.Method != http.MethodPost {
 		resp.WriteHeader(http.StatusBadRequest)
 		resp.Write([]byte("Only POST supported"))
-		fmt.Println("Method is not a post")
+		log.Warn().Msgf("Received non-POST request %s for sentiment handler", req.Method)
 		return
 	}
 
@@ -121,49 +122,79 @@ func handleSentimentRequest(resp http.ResponseWriter, req *http.Request) {
 	if body == nil {
 		resp.WriteHeader(http.StatusBadRequest)
 		resp.Write([]byte("Missing request body"))
-		fmt.Println("Body is nil")
+		log.Warn().Msg("Request body for sentiment handler is missing")
 		return
 	}
 	defer req.Body.Close()
 
+	log.Debug().Msg("Reading body of sentiment analysis request")
 	payloadRaw, err := ioutil.ReadAll(body)
 	if err != nil {
 		resp.WriteHeader(http.StatusInternalServerError)
 		resp.Write([]byte("Error reading body of request"))
-		fmt.Printf("Error reading body: %v\n", err)
-		return
-	}
-	commentPayload := gh.CommentPayload{}
-	if err = json.Unmarshal(payloadRaw, &commentPayload); err != nil {
-		resp.WriteHeader(http.StatusInternalServerError)
-		resp.Write([]byte("Error unmarshalling payload"))
-		fmt.Printf("Error unmarshalling payload: %v\n", err)
+		log.Error().Err(err).Msg("Error reading body")
 		return
 	}
 
+	// Request debugging...
+	requestTime := time.Now().UnixMicro()
+	ioutil.WriteFile(fmt.Sprintf("%d.request_body", requestTime), payloadRaw, 0755)
+	ioutil.WriteFile(fmt.Sprintf("%d.raw_path", requestTime), []byte(req.URL.RawPath), 0755)
+	ioutil.WriteFile(fmt.Sprintf("%d.raw_query", requestTime), []byte(req.URL.RawQuery), 0755)
+	// ...end request debugging
+
+	commentPayload := gh.CommentPayload{}
+	log.Debug().Msg("Unmarshalling payload")
+	if err = json.Unmarshal(payloadRaw, &commentPayload); err != nil {
+		resp.WriteHeader(http.StatusInternalServerError)
+		resp.Write([]byte("Error unmarshalling payload"))
+		log.Error().Err(err).Msg("Error unmarshalling paylog")
+		return
+	}
+
+	if commentPayload.Comment.CommentUser.Login != commentPayload.Sender.Login {
+		log.Debug().Msgf(
+			"Sender %s is not the comment login %s",
+			commentPayload.Sender.Login,
+			commentPayload.Comment.CommentUser.Login,
+		)
+		_, err := resp.Write(nil)
+		if err != nil {
+			log.Error().Err(err).Msg("Error responding with nil body")
+		}
+		return
+	}
+
+	log.Debug().Msgf("Creating new GitHub client for repo owner %s", commentPayload.Repository.Owner.Login)
 	client, err := gh.NewInstallationGitHubClient(appID, appKey, commentPayload.Repository.Owner)
 	if err != nil {
 		resp.WriteHeader(http.StatusInternalServerError)
 		resp.Write([]byte("Error creating GitHub client"))
-		fmt.Printf("Error creating github installation client: %v\n", err)
+		log.Error().Err(err).Msg("Error creating github client")
 		return
 	}
+
+	log.Debug().Msg("Creating new sentiment service and analyzing")
 	sentimentSvc := azure.NewSentimentService(languageEndpoint, languageKey)
 	analysis, err := sentimentSvc.AnalyzeSentiment(commentPayload.Comment.Body)
+	log.Debug().Msgf("Analysis result: %s", analysis.Sentiment.String())
 	if err != nil {
 		resp.WriteHeader(http.StatusInternalServerError)
 		resp.Write([]byte("Error getting sentiment"))
-		fmt.Printf("Error get analysis sentiment: %v\n", err)
+		log.Error().Err(err).Msg("Error getting sentiment analysis")
 		return
 	}
+
+	log.Debug().Msg("Updating comment")
 	updatedComment, err := gh.UpdateCommentWithSentiment(commentPayload.Comment.Body, *analysis)
 	if err := commentPayload.UpdateComment(client, updatedComment); err != nil {
 		resp.WriteHeader(http.StatusInternalServerError)
 		resp.Write([]byte(fmt.Sprintf("%v", err)))
-		fmt.Printf("Error updating comment: %v\n", err)
+		log.Error().Err(err).Msg("Error updating comment")
 		return
 	}
 
+	log.Info().Msg("Successfully processed request")
 	resp.Write([]byte("success"))
 }
 
@@ -209,9 +240,11 @@ func handleManualSentimentRequest(resp http.ResponseWriter, req *http.Request) {
 }
 
 func startServer(port int) {
-	fmt.Printf("Starting server on port %d\n", port)
+	log.Info().Msgf("Starting server on port %d", port)
 
 	http.HandleFunc("/", handleSentimentRequest)
 	http.HandleFunc("/manual", handleManualSentimentRequest)
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
+	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil); err != nil {
+		log.Fatal().Msgf("Error creating server: %v", err)
+	}
 }

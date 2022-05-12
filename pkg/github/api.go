@@ -2,11 +2,14 @@ package github
 
 import (
 	"context"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt"
 	ghapi "github.com/google/go-github/v44/github"
+	"github.com/rs/zerolog/log"
 	"golang.org/x/oauth2"
 )
 
@@ -22,7 +25,18 @@ func generateJWT(appID int, privateKey []byte) (string, error) {
 		},
 	)
 
-	tokenSigned, err := token.SignedString(privateKey)
+	decodedPem, _ := pem.Decode(privateKey)
+	if decodedPem == nil {
+		return "", fmt.Errorf("unexpected empty decoded pem")
+	}
+	log.Info().Msgf("Decoded PEM of type %s", decodedPem.Type)
+
+	rsaPrivateKey, err := x509.ParsePKCS1PrivateKey(decodedPem.Bytes)
+	if err != nil {
+		return "", fmt.Errorf("error parsing private key: %w", err)
+	}
+
+	tokenSigned, err := token.SignedString(rsaPrivateKey)
 	if err != nil {
 		return "", fmt.Errorf("error signing JWT token: %w", err)
 	}
