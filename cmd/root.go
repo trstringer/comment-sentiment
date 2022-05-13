@@ -6,13 +6,14 @@ Copyright © 2022 Thomas Stringer <thomas@trstringer.com>
 package cmd
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
@@ -23,14 +24,16 @@ import (
 )
 
 var (
-	port             int
-	languageKeyFile  string
-	languageKey      string
-	languageEndpoint string
-	appID            int
-	appKeyFile       string
-	appKey           []byte
-	showVersion      bool
+	port              int
+	languageKeyFile   string
+	languageKey       string
+	webhookSecret     []byte
+	webhookSecretFile string
+	languageEndpoint  string
+	appID             int
+	appKeyFile        string
+	appKey            []byte
+	showVersion       bool
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -53,6 +56,10 @@ to quickly create a Cobra application.`,
 			fmt.Println("Required parameter --language-key not supplied")
 			os.Exit(1)
 		}
+		if webhookSecretFile == "" {
+			fmt.Println("Required parameter --webhook-secretfile not supplied")
+			os.Exit(1)
+		}
 		if languageEndpoint == "" {
 			fmt.Println("Required parameter --language-endpoint not supplied")
 			os.Exit(1)
@@ -62,18 +69,28 @@ to quickly create a Cobra application.`,
 			os.Exit(1)
 		}
 
-		filePath, err := filepath.Abs(languageKeyFile)
+		languageKeyFilePath, err := filepath.Abs(languageKeyFile)
 		if err != nil {
-			fmt.Printf("Error getting file path: %v\n", err)
+			fmt.Printf("Error getting file path for language key: %v\n", err)
 			os.Exit(1)
 		}
-
-		languageKeyBytes, err := ioutil.ReadFile(filePath)
+		languageKeyBytes, err := ioutil.ReadFile(languageKeyFilePath)
 		if err != nil {
-			fmt.Printf("Error reading key file: %v\n", err)
+			fmt.Printf("Error reading language key file: %v\n", err)
 			os.Exit(1)
 		}
 		languageKey = string(languageKeyBytes)
+
+		webhookSecretFilePath, err := filepath.Abs(webhookSecretFile)
+		if err != nil {
+			fmt.Printf("Error getting file path for webhook secret: %v\n", err)
+			os.Exit(1)
+		}
+		webhookSecret, err = ioutil.ReadFile(webhookSecretFilePath)
+		if err != nil {
+			fmt.Printf("Error reading webhook secret file: %v\n", err)
+			os.Exit(1)
+		}
 
 		if appID <= 0 {
 			fmt.Println("Required parameter --app-id not supplied or incorrect value")
@@ -103,9 +120,18 @@ func init() {
 	rootCmd.Flags().IntVarP(&port, "port", "p", 8080, "port that the server should be listening on")
 	rootCmd.Flags().StringVarP(&languageKeyFile, "language-keyfile", "l", "", "cognitive services language key file path")
 	rootCmd.Flags().StringVarP(&languageEndpoint, "language-endpoint", "e", "", "cognitive services language endpoint")
+	rootCmd.Flags().StringVarP(&webhookSecretFile, "webhook-secretfile", "w", "", "file storing the webhook secret")
 	rootCmd.Flags().IntVar(&appID, "app-id", 0, "GitHub App ID")
 	rootCmd.Flags().StringVarP(&appKeyFile, "app-keyfile", "a", "", "GitHub App key file path")
 	rootCmd.Flags().BoolVarP(&showVersion, "version", "v", false, "list the version")
+}
+
+func isRequestValid(signature string, body []byte, secretKey []byte) (bool, string) {
+	hash := hmac.New(sha256.New, secretKey)
+	hash.Write(body)
+	calculatedHashBytes := hash.Sum(nil)
+	calculatedHash := fmt.Sprintf("sha256=%x", string(calculatedHashBytes))
+	return calculatedHash == signature, calculatedHash
 }
 
 func handleSentimentRequest(resp http.ResponseWriter, req *http.Request) {
@@ -136,12 +162,18 @@ func handleSentimentRequest(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Request debugging...
-	requestTime := time.Now().UnixMicro()
-	ioutil.WriteFile(fmt.Sprintf("%d.request_body", requestTime), payloadRaw, 0755)
-	ioutil.WriteFile(fmt.Sprintf("%d.raw_path", requestTime), []byte(req.URL.RawPath), 0755)
-	ioutil.WriteFile(fmt.Sprintf("%d.raw_query", requestTime), []byte(req.URL.RawQuery), 0755)
-	// ...end request debugging
+	githubSignature := req.Header.Get("X-Hub-Signature-256")
+	requestIsValid, computedHash := isRequestValid(githubSignature, payloadRaw, webhookSecret)
+	if !requestIsValid {
+		resp.WriteHeader(http.StatusUnauthorized)
+		resp.Write([]byte("Unauthorized access denied"))
+		log.Warn().Msgf(
+			"Mismatched signature from request (%s) to computed (%s)",
+			githubSignature,
+			computedHash,
+		)
+		return
+	}
 
 	commentPayload := gh.CommentPayload{}
 	log.Debug().Msg("Unmarshalling payload")

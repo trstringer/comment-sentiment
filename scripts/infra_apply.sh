@@ -10,8 +10,14 @@ PRIVATEKEY=$(az keyvault secret show \
     --name happyossprivatekey \
     --query value -o tsv)
 
+WEBHOOKSECRET=$(az keyvault secret show \
+    --vault-name $KEYVAULT \
+    --name happyosswebhooksecret \
+    --query value -o tsv)
+
 terraform -chdir=./infra apply -auto-approve \
-    -var="privatekey=$PRIVATEKEY"
+    -var="privatekey=$PRIVATEKEY" \
+    -var="webhooksecret=$WEBHOOKSECRET"
 
 RESOURCE_NAME=$(terraform -chdir=./infra output -raw resource_name)
 OBJECT_ID=$(az aks show \

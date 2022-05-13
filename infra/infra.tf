@@ -25,6 +25,10 @@ variable "privatekey" {
   sensitive = true
 }
 
+variable "webhooksecret" {
+  sensitive = true
+}
+
 resource "azurerm_resource_group" "rg" {
   name = local.resource_name
   location = var.location
@@ -112,6 +116,12 @@ resource "azurerm_key_vault_secret" "privatekeysecret" {
   key_vault_id = azurerm_key_vault.akv.id
   name = "happyossprivatekey"
   value = var.privatekey
+}
+
+resource "azurerm_key_vault_secret" "webhooksecret" {
+  key_vault_id = azurerm_key_vault.akv.id
+  name = "happyosswebhooksecret"
+  value = var.webhooksecret
 }
 
 output "acr_endpoint" {

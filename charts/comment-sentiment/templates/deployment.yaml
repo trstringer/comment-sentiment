@@ -28,6 +28,8 @@ spec:
             - "{{ .Values.github.appID }}"
             - "--app-keyfile"
             - "/mnt/secrets-store/happyossprivatekey"
+            - "--webhook-secretfile"
+            - "/mnt/secrets-store/happyosswebhooksecret"
           ports:
             - name: http
               containerPort: {{ .Values.port }}
