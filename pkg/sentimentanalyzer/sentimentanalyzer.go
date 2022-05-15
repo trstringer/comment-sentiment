@@ -12,8 +12,16 @@ const (
 
 // Analysis represents the sentiment analysis.
 type Analysis struct {
+	Sentiment        Sentiment
+	Confidence       float32
+	SentenceAnalyses []SentenceAnalysis
+}
+
+// SentenceAnalysis represents individual sentence analysis.
+type SentenceAnalysis struct {
 	Sentiment  Sentiment
 	Confidence float32
+	Text       string
 }
 
 type sentimentAnalyzer interface {
@@ -24,4 +32,16 @@ type sentimentAnalyzer interface {
 // analysis.
 func GetSentiment(svc sentimentAnalyzer, comment string) (Analysis, error) {
 	return svc.analyzeSentiment(comment)
+}
+
+// NegativeSentences returns any negative sentences.
+func (a Analysis) NegativeSentences() []SentenceAnalysis {
+	negativeSentences := []SentenceAnalysis{}
+	for _, sentenceAnalysis := range a.SentenceAnalyses {
+		if sentenceAnalysis.Sentiment == Negative {
+			negativeSentences = append(negativeSentences, sentenceAnalysis)
+		}
+	}
+
+	return negativeSentences
 }

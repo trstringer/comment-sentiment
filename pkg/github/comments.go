@@ -55,5 +55,16 @@ func (c CommentPayload) updateIssueComment(client *ghapi.Client, newComment stri
 }
 
 func (c CommentPayload) updatePullRequestReviewComment(client *ghapi.Client, newComment string) error {
+	_, _, err := client.PullRequests.EditComment(
+		context.Background(),
+		c.Repository.Owner.Login,
+		c.Repository.Name,
+		c.Comment.ID,
+		&ghapi.PullRequestComment{Body: &newComment},
+	)
+	if err != nil {
+		return fmt.Errorf("error updating pull request review comment: %w", err)
+	}
+
 	return nil
 }

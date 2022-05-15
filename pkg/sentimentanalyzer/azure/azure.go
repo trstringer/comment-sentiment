@@ -26,6 +26,13 @@ type textAnalyticsResponseDocument struct {
 	ID               string           `json:"id"`
 	Sentiment        string           `json:"sentiment"`
 	ConfidenceScores confidenceScores `json:"confidenceScores"`
+	Sentences        []sentence       `json:"sentences"`
+}
+
+type sentence struct {
+	Sentiment        string           `json:"sentiment"`
+	ConfidenceScores confidenceScores `json:"confidenceScores"`
+	Text             string           `json:"text"`
 }
 
 type textAnalyticsResponse struct {
@@ -74,17 +81,29 @@ func (a SentimentService) AnalyzeSentiment(text string) (*sa.Analysis, error) {
 	}
 	sentimentAnalysis := &textAnalyticsResponse{}
 	json.Unmarshal(body, sentimentAnalysis)
-	lol := string(body)
-	_ = lol
 
 	if len(sentimentAnalysis.Documents) == 0 {
 		return nil, fmt.Errorf("unexpectedly no analysis returned")
 	}
-	resultSentiment := sentimentAnalysis.Documents[0].sentiment()
+	resultSentiment := sentimentFromString(sentimentAnalysis.Documents[0].Sentiment)
 	resultConfidence := sentimentAnalysis.Documents[0].ConfidenceScores.confidence(resultSentiment)
+	sentenceAnalyses := []sa.SentenceAnalysis{}
+	for _, sentence := range sentimentAnalysis.Documents[0].Sentences {
+		sentenceSentiment := sentimentFromString(sentence.Sentiment)
+		sentenceSentimentConfidence := sentence.ConfidenceScores.confidence(sentenceSentiment)
+		sentenceAnalyses = append(
+			sentenceAnalyses,
+			sa.SentenceAnalysis{
+				Text:       sentence.Text,
+				Confidence: sentenceSentimentConfidence,
+				Sentiment:  sentenceSentiment,
+			},
+		)
+	}
 	resultAnalysis := sa.Analysis{
-		Sentiment:  resultSentiment,
-		Confidence: resultConfidence,
+		Sentiment:        resultSentiment,
+		Confidence:       resultConfidence,
+		SentenceAnalyses: sentenceAnalyses,
 	}
 
 	return &resultAnalysis, nil
@@ -102,9 +121,9 @@ func formatDocument(text string) ([]byte, error) {
 	return json.Marshal(documentStructure)
 }
 
-func (t textAnalyticsResponseDocument) sentiment() sa.Sentiment {
+func sentimentFromString(rawSentiment string) sa.Sentiment {
 	var sentiment sa.Sentiment
-	switch t.Sentiment {
+	switch rawSentiment {
 	case "positive":
 		sentiment = sa.Positive
 	case "negative":
