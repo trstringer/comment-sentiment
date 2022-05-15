@@ -208,7 +208,13 @@ func handleSentimentRequest(resp http.ResponseWriter, req *http.Request) {
 
 	log.Debug().Msg("Creating new sentiment service and analyzing")
 	sentimentSvc := azure.NewSentimentService(languageEndpoint, languageKey)
-	analysis, err := sentimentSvc.AnalyzeSentiment(commentPayload.Comment.Body)
+	bodyTrimmed, err := gh.TrimCommentSentimentAnalysis(commentPayload.Comment.Body)
+	if err != nil {
+		resp.WriteHeader(http.StatusInternalServerError)
+		resp.Write([]byte("Error formatting body"))
+		log.Error().Err(err).Msg("Error trimming comment body")
+	}
+	analysis, err := sentimentSvc.AnalyzeSentiment(bodyTrimmed)
 	log.Debug().Msgf("Analysis result: %s", analysis.Sentiment.String())
 	if err != nil {
 		resp.WriteHeader(http.StatusInternalServerError)

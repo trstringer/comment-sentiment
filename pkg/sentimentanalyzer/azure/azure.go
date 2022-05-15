@@ -53,7 +53,6 @@ func (a SentimentService) AnalyzeSentiment(text string) (*sa.Analysis, error) {
 	req, err := http.NewRequest(
 		http.MethodPost,
 		textAnalyticsURL,
-		// bytes.NewBuffer([]byte(textFormatted)),
 		bytes.NewBuffer(textMarshalled),
 	)
 	req.Header.Add("Content-Type", "application/json")
