@@ -44,7 +44,7 @@ func TestUpdateCommentWithSentiment(t *testing.T) {
 			},
 			expected: `this is a comment
 
-<!-- ANALYSIS START -->Sentiment analysis: Negative :rage: (confidence: 1.00) *... consider editing for a more positive response!*<!-- ANALYSIS END -->`,
+<!-- ANALYSIS START -->Sentiment analysis: Negative :rage: (confidence: 1.00) ... consider editing for a more positive response!<!-- ANALYSIS END -->`,
 		},
 		{
 			name: "neutral_analysis_positive_comment",
@@ -104,7 +104,7 @@ func TestTrimCommentSentimentAnalysis(t *testing.T) {
 			name: "negative_analysis_footer",
 			comment: `this is a comment
 
-<!-- ANALYSIS START -->Sentiment analysis: Negative :rage: (confidence: 0.90)*... consider editing for a more positive response!*<!-- ANALYSIS END -->`,
+<!-- ANALYSIS START -->Sentiment analysis: Negative :rage: (confidence: 0.90)... consider editing for a more positive response!<!-- ANALYSIS END -->`,
 			expected: "this is a comment",
 		},
 		{

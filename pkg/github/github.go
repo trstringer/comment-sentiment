@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	negativeCommentSuggestion string = "*... consider editing for a more positive response!*"
+	negativeCommentSuggestion string = "... consider editing for a more positive response!"
 	indicatorCommentStart     string = "<!-- ANALYSIS START -->"
 	indicatorCommentEnd       string = "<!-- ANALYSIS END -->"
 )
@@ -26,6 +26,14 @@ func sentimentResponse(analysis sa.Analysis) string {
 
 	if analysis.Sentiment == sa.Negative {
 		response = fmt.Sprintf("%s %s", response, negativeCommentSuggestion)
+	}
+
+	negativeSentences := analysis.NegativeSentences()
+	if len(negativeSentences) > 0 {
+		response = fmt.Sprintf("%s Some negative sentences:", response)
+		for _, negativeSentence := range negativeSentences {
+			response = fmt.Sprintf("%s \"%s\"", response, negativeSentence.Text)
+		}
 	}
 
 	// Once we have generated the comment modification, we need to then wrap
