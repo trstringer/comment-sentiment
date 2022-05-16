@@ -11,3 +11,5 @@ GitHub App that runs sentiment analysis on issue comments, pull request comments
 ## How does this work?
 
 After you install this GitHub App, it will be analyze all comments and then modify the comment text itself with the sentiment analysis.
+
+![Comment analyzer demo](./demo.gif)
