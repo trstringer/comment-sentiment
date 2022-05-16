@@ -1,9 +1,5 @@
 package github
 
-import (
-	ghapi "github.com/google/go-github/v44/github"
-)
-
 // CommentType allows the ability to distinguish different comment types.
 type CommentType int
 
@@ -71,10 +67,4 @@ type Issue struct {
 // PullRequest represents a GitHub pull request.
 type PullRequest struct {
 	URL string `json:"url"`
-}
-
-// App is a representation of the GitHub App.
-type App struct {
-	client *ghapi.Client
-	appID  int
 }

@@ -62,6 +62,9 @@ func (a SentimentService) AnalyzeSentiment(text string) (*sa.Analysis, error) {
 		textAnalyticsURL,
 		bytes.NewBuffer(textMarshalled),
 	)
+	if err != nil {
+		return nil, fmt.Errorf("error creating new request: %w", err)
+	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Ocp-Apim-Subscription-Key", a.key)
 
@@ -80,7 +83,9 @@ func (a SentimentService) AnalyzeSentiment(text string) (*sa.Analysis, error) {
 		return nil, err
 	}
 	sentimentAnalysis := &textAnalyticsResponse{}
-	json.Unmarshal(body, sentimentAnalysis)
+	if err := json.Unmarshal(body, sentimentAnalysis); err != nil {
+		return nil, fmt.Errorf("error unmarshalling text analysis")
+	}
 
 	if len(sentimentAnalysis.Documents) == 0 {
 		return nil, fmt.Errorf("unexpectedly no analysis returned")

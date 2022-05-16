@@ -139,6 +139,7 @@ func handleSentimentRequest(resp http.ResponseWriter, req *http.Request) {
 
 	if req.Method != http.MethodPost {
 		resp.WriteHeader(http.StatusBadRequest)
+		// nolint: errcheck
 		resp.Write([]byte("Only POST supported"))
 		log.Warn().Msgf("Received non-POST request %s for sentiment handler", req.Method)
 		return
@@ -147,6 +148,7 @@ func handleSentimentRequest(resp http.ResponseWriter, req *http.Request) {
 	body := req.Body
 	if body == nil {
 		resp.WriteHeader(http.StatusBadRequest)
+		// nolint: errcheck
 		resp.Write([]byte("Missing request body"))
 		log.Warn().Msg("Request body for sentiment handler is missing")
 		return
@@ -157,6 +159,7 @@ func handleSentimentRequest(resp http.ResponseWriter, req *http.Request) {
 	payloadRaw, err := ioutil.ReadAll(body)
 	if err != nil {
 		resp.WriteHeader(http.StatusInternalServerError)
+		// nolint: errcheck
 		resp.Write([]byte("Error reading body of request"))
 		log.Error().Err(err).Msg("Error reading body")
 		return
@@ -166,6 +169,7 @@ func handleSentimentRequest(resp http.ResponseWriter, req *http.Request) {
 	requestIsValid, computedHash := isRequestValid(githubSignature, payloadRaw, webhookSecret)
 	if !requestIsValid {
 		resp.WriteHeader(http.StatusUnauthorized)
+		// nolint: errcheck
 		resp.Write([]byte("Unauthorized access denied"))
 		log.Warn().Msgf(
 			"Mismatched signature from request (%s) to computed (%s)",
@@ -179,6 +183,7 @@ func handleSentimentRequest(resp http.ResponseWriter, req *http.Request) {
 	log.Debug().Msg("Unmarshalling payload")
 	if err = json.Unmarshal(payloadRaw, &commentPayload); err != nil {
 		resp.WriteHeader(http.StatusInternalServerError)
+		// nolint: errcheck
 		resp.Write([]byte("Error unmarshalling payload"))
 		log.Error().Err(err).Msg("Error unmarshalling paylog")
 		return
@@ -201,6 +206,7 @@ func handleSentimentRequest(resp http.ResponseWriter, req *http.Request) {
 	client, err := gh.NewInstallationGitHubClient(appID, appKey, commentPayload.Repository.Owner)
 	if err != nil {
 		resp.WriteHeader(http.StatusInternalServerError)
+		// nolint: errcheck
 		resp.Write([]byte("Error creating GitHub client"))
 		log.Error().Err(err).Msg("Error creating github client")
 		return
@@ -211,6 +217,7 @@ func handleSentimentRequest(resp http.ResponseWriter, req *http.Request) {
 	bodyTrimmed, err := gh.TrimCommentSentimentAnalysis(commentPayload.Comment.Body)
 	if err != nil {
 		resp.WriteHeader(http.StatusInternalServerError)
+		// nolint: errcheck
 		resp.Write([]byte("Error formatting body"))
 		log.Error().Err(err).Msg("Error trimming comment body")
 	}
@@ -218,6 +225,7 @@ func handleSentimentRequest(resp http.ResponseWriter, req *http.Request) {
 	log.Debug().Msgf("Analysis result: %s", analysis.Sentiment.String())
 	if err != nil {
 		resp.WriteHeader(http.StatusInternalServerError)
+		// nolint: errcheck
 		resp.Write([]byte("Error getting sentiment"))
 		log.Error().Err(err).Msg("Error getting sentiment analysis")
 		return
@@ -225,14 +233,23 @@ func handleSentimentRequest(resp http.ResponseWriter, req *http.Request) {
 
 	log.Debug().Msg("Updating comment")
 	updatedComment, err := gh.UpdateCommentWithSentiment(commentPayload.Comment.Body, *analysis)
+	if err != nil {
+		resp.WriteHeader(http.StatusInternalServerError)
+		// nolint: errcheck
+		resp.Write([]byte(fmt.Sprintf("%v", err)))
+		log.Error().Err(err).Msg("Error updating comment text with sentiment")
+		return
+	}
 	if err := commentPayload.UpdateComment(client, updatedComment); err != nil {
 		resp.WriteHeader(http.StatusInternalServerError)
+		// nolint: errcheck
 		resp.Write([]byte(fmt.Sprintf("%v", err)))
-		log.Error().Err(err).Msg("Error updating comment")
+		log.Error().Err(err).Msg("Error updating comment on github")
 		return
 	}
 
 	log.Info().Msg("Successfully processed request")
+	// nolint: errcheck
 	resp.Write([]byte("success"))
 }
 
@@ -242,6 +259,7 @@ func handleManualSentimentRequest(resp http.ResponseWriter, req *http.Request) {
 	body := req.Body
 	if body == nil {
 		resp.WriteHeader(http.StatusBadRequest)
+		// nolint: errcheck
 		resp.Write([]byte("Missing request body"))
 		return
 	}
@@ -250,6 +268,7 @@ func handleManualSentimentRequest(resp http.ResponseWriter, req *http.Request) {
 	commentDataRaw, err := ioutil.ReadAll(body)
 	if err != nil {
 		resp.WriteHeader(http.StatusInternalServerError)
+		// nolint: errcheck
 		resp.Write([]byte("Error reading body of request"))
 		return
 	}
@@ -260,16 +279,19 @@ func handleManualSentimentRequest(resp http.ResponseWriter, req *http.Request) {
 
 	if err != nil {
 		resp.WriteHeader(http.StatusInternalServerError)
+		// nolint: errcheck
 		resp.Write([]byte("Error getting sentiment"))
 		return
 	}
 
 	if analysis == nil {
 		resp.WriteHeader(http.StatusInternalServerError)
+		// nolint: errcheck
 		resp.Write([]byte("Unexpectedly no analysis returned"))
 		return
 	}
 
+	// nolint: errcheck
 	resp.Write([]byte(fmt.Sprintf(
 		"Analysis: %s - Confidence: %.2f",
 		analysis.Sentiment,

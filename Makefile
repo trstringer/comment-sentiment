@@ -7,6 +7,10 @@ build: generate
 	mkdir -p ./dist
 	go build -o ./dist/comment-sentiment .
 
+.PHONY: lint
+lint:
+	docker run --rm -v $$(pwd):/app -w /app golangci/golangci-lint:v1.46.1 golangci-lint run -v
+
 .PHONY: test
 test:
 	go test -v ./...

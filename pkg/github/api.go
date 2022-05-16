@@ -81,6 +81,9 @@ func NewInstallationGitHubClient(appID int, privateKey []byte, repoOwner Reposit
 		installationID,
 		nil,
 	)
+	if err != nil {
+		return nil, fmt.Errorf("error creating installation token")
+	}
 
 	return newGitHubClient(installationToken.GetToken()), nil
 }
