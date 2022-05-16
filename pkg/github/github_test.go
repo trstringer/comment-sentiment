@@ -22,7 +22,9 @@ func TestUpdateCommentWithSentiment(t *testing.T) {
 			},
 			expected: `this is a comment
 
-<!-- ANALYSIS START -->Sentiment analysis: Positive :grin: (confidence: 0.90)<!-- ANALYSIS END -->`,
+<!-- ANALYSIS START -->
+**Overall sentiment analysis**: Positive :grin: (confidence: 0.90)
+<!-- ANALYSIS END -->`,
 		},
 		{
 			name:    "neutral_comment",
@@ -33,7 +35,9 @@ func TestUpdateCommentWithSentiment(t *testing.T) {
 			},
 			expected: `this is a comment
 
-<!-- ANALYSIS START -->Sentiment analysis: Neutral :neutral_face: (confidence: 0.83)<!-- ANALYSIS END -->`,
+<!-- ANALYSIS START -->
+**Overall sentiment analysis**: Neutral :neutral_face: (confidence: 0.83)
+<!-- ANALYSIS END -->`,
 		},
 		{
 			name:    "negative_comment",
@@ -44,7 +48,9 @@ func TestUpdateCommentWithSentiment(t *testing.T) {
 			},
 			expected: `this is a comment
 
-<!-- ANALYSIS START -->Sentiment analysis: Negative :rage: (confidence: 1.00) ... consider editing for a more positive response!<!-- ANALYSIS END -->`,
+<!-- ANALYSIS START -->
+**Overall sentiment analysis**: Negative :rage: (confidence: 1.00) *... consider editing for a more positive response!*
+<!-- ANALYSIS END -->`,
 		},
 		{
 			name: "neutral_analysis_positive_comment",
@@ -52,7 +58,9 @@ func TestUpdateCommentWithSentiment(t *testing.T) {
 
 this is another line.
 
-<!-- ANALYSIS START -->Sentiment analysis: Neutral :neutral_face: (confidence: 0.83)<!-- ANALYSIS END -->`,
+<!-- ANALYSIS START -->
+**Overall sentiment analysis**: Neutral :neutral_face: (confidence: 0.83)
+<!-- ANALYSIS END -->`,
 			sentimentAnalysis: sa.Analysis{
 				Sentiment:  sa.Positive,
 				Confidence: 0.9,
@@ -61,7 +69,9 @@ this is another line.
 
 this is another line.
 
-<!-- ANALYSIS START -->Sentiment analysis: Positive :grin: (confidence: 0.90)<!-- ANALYSIS END -->`,
+<!-- ANALYSIS START -->
+**Overall sentiment analysis**: Positive :grin: (confidence: 0.90)
+<!-- ANALYSIS END -->`,
 		},
 		{
 			name: "neutral_analysis_negative_sentence",
@@ -83,7 +93,12 @@ this is another line.`,
 
 this is another line.
 
-<!-- ANALYSIS START -->Sentiment analysis: Neutral :neutral_face: (confidence: 0.90) Some negative sentences: "sentence text 1"<!-- ANALYSIS END -->`,
+<!-- ANALYSIS START -->
+**Overall sentiment analysis**: Neutral :neutral_face: (confidence: 0.90)
+
+Negative sentences that could be improved:
+* sentence text 1
+<!-- ANALYSIS END -->`,
 		},
 		{
 			name: "neutral_analysis_negative_sentence_non_negative_sentences",
@@ -115,7 +130,12 @@ this is another line.`,
 
 this is another line.
 
-<!-- ANALYSIS START -->Sentiment analysis: Neutral :neutral_face: (confidence: 0.90) Some negative sentences: "sentence text 1"<!-- ANALYSIS END -->`,
+<!-- ANALYSIS START -->
+**Overall sentiment analysis**: Neutral :neutral_face: (confidence: 0.90)
+
+Negative sentences that could be improved:
+* sentence text 1
+<!-- ANALYSIS END -->`,
 		},
 		{
 			name: "neutral_analysis_no_negative_sentences",
@@ -147,7 +167,9 @@ this is another line.`,
 
 this is another line.
 
-<!-- ANALYSIS START -->Sentiment analysis: Neutral :neutral_face: (confidence: 0.90)<!-- ANALYSIS END -->`,
+<!-- ANALYSIS START -->
+**Overall sentiment analysis**: Neutral :neutral_face: (confidence: 0.90)
+<!-- ANALYSIS END -->`,
 		},
 	}
 

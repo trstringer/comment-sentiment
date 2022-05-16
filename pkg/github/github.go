@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	negativeCommentSuggestion string = "... consider editing for a more positive response!"
+	negativeCommentSuggestion string = "*... consider editing for a more positive response!*"
 	indicatorCommentStart     string = "<!-- ANALYSIS START -->"
 	indicatorCommentEnd       string = "<!-- ANALYSIS END -->"
 )
@@ -18,7 +18,7 @@ const (
 // should be added to the comment to display the analysis result.
 func sentimentResponse(analysis sa.Analysis) string {
 	response := fmt.Sprintf(
-		"Sentiment analysis: %s %s (confidence: %.2f)",
+		"**Overall sentiment analysis**: %s %s (confidence: %.2f)",
 		analysis.Sentiment,
 		emojiFromSentiment(analysis.Sentiment),
 		analysis.Confidence,
@@ -30,9 +30,9 @@ func sentimentResponse(analysis sa.Analysis) string {
 
 	negativeSentences := analysis.NegativeSentences()
 	if len(negativeSentences) > 0 && analysis.Sentiment != sa.Negative {
-		response = fmt.Sprintf("%s Some negative sentences:", response)
+		response = fmt.Sprintf("%s\n\nNegative sentences that could be improved:", response)
 		for _, negativeSentence := range negativeSentences {
-			response = fmt.Sprintf("%s \"%s\"", response, negativeSentence.Text)
+			response = fmt.Sprintf("%s\n* %s", response, negativeSentence.Text)
 		}
 	}
 
@@ -40,7 +40,7 @@ func sentimentResponse(analysis sa.Analysis) string {
 	// it with the indicators. This will allow future modifications of the
 	// comment (e.g. on a comment update) to be able to search for the analysis
 	// and replace it, etc.
-	response = fmt.Sprintf("%s%s%s", indicatorCommentStart, response, indicatorCommentEnd)
+	response = fmt.Sprintf("%s\n%s\n%s", indicatorCommentStart, response, indicatorCommentEnd)
 
 	return response
 }
@@ -75,7 +75,7 @@ func UpdateCommentWithSentiment(comment string, analysis sa.Analysis) (string, e
 // TrimCommentSentimentAnalysis removes any sentiment analysis from a comment.
 func TrimCommentSentimentAnalysis(comment string) (string, error) {
 	reg, err := regexp.Compile(fmt.Sprintf(
-		"%s.*%s",
+		"(?s:%s.*%s)",
 		indicatorCommentStart,
 		indicatorCommentEnd,
 	))
