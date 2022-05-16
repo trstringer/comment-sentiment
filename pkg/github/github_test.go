@@ -63,6 +63,92 @@ this is another line.
 
 <!-- ANALYSIS START -->Sentiment analysis: Positive :grin: (confidence: 0.90)<!-- ANALYSIS END -->`,
 		},
+		{
+			name: "neutral_analysis_negative_sentence",
+			comment: `this is a comment.
+
+this is another line.`,
+			sentimentAnalysis: sa.Analysis{
+				Sentiment:  sa.Neutral,
+				Confidence: 0.9,
+				SentenceAnalyses: []sa.SentenceAnalysis{
+					{
+						Text:       "sentence text 1",
+						Sentiment:  sa.Negative,
+						Confidence: 0.9,
+					},
+				},
+			},
+			expected: `this is a comment.
+
+this is another line.
+
+<!-- ANALYSIS START -->Sentiment analysis: Neutral :neutral_face: (confidence: 0.90) Some negative sentences: "sentence text 1"<!-- ANALYSIS END -->`,
+		},
+		{
+			name: "neutral_analysis_negative_sentence_non_negative_sentences",
+			comment: `this is a comment.
+
+this is another line.`,
+			sentimentAnalysis: sa.Analysis{
+				Sentiment:  sa.Neutral,
+				Confidence: 0.9,
+				SentenceAnalyses: []sa.SentenceAnalysis{
+					{
+						Text:       "sentence text 1",
+						Sentiment:  sa.Negative,
+						Confidence: 0.9,
+					},
+					{
+						Text:       "sentence text 2",
+						Sentiment:  sa.Positive,
+						Confidence: 0.9,
+					},
+					{
+						Text:       "sentence text 3",
+						Sentiment:  sa.Neutral,
+						Confidence: 0.9,
+					},
+				},
+			},
+			expected: `this is a comment.
+
+this is another line.
+
+<!-- ANALYSIS START -->Sentiment analysis: Neutral :neutral_face: (confidence: 0.90) Some negative sentences: "sentence text 1"<!-- ANALYSIS END -->`,
+		},
+		{
+			name: "neutral_analysis_no_negative_sentences",
+			comment: `this is a comment.
+
+this is another line.`,
+			sentimentAnalysis: sa.Analysis{
+				Sentiment:  sa.Neutral,
+				Confidence: 0.9,
+				SentenceAnalyses: []sa.SentenceAnalysis{
+					{
+						Text:       "sentence text 1",
+						Sentiment:  sa.Neutral,
+						Confidence: 0.9,
+					},
+					{
+						Text:       "sentence text 2",
+						Sentiment:  sa.Positive,
+						Confidence: 0.9,
+					},
+					{
+						Text:       "sentence text 3",
+						Sentiment:  sa.Neutral,
+						Confidence: 0.9,
+					},
+				},
+			},
+			expected: `this is a comment.
+
+this is another line.
+
+<!-- ANALYSIS START -->Sentiment analysis: Neutral :neutral_face: (confidence: 0.90)<!-- ANALYSIS END -->`,
+		},
 	}
 
 	for _, testCase := range testCases {

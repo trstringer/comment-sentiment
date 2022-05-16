@@ -29,7 +29,7 @@ func sentimentResponse(analysis sa.Analysis) string {
 	}
 
 	negativeSentences := analysis.NegativeSentences()
-	if len(negativeSentences) > 0 {
+	if len(negativeSentences) > 0 && analysis.Sentiment != sa.Negative {
 		response = fmt.Sprintf("%s Some negative sentences:", response)
 		for _, negativeSentence := range negativeSentences {
 			response = fmt.Sprintf("%s \"%s\"", response, negativeSentence.Text)
