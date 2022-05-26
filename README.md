@@ -2,7 +2,7 @@
 
 *Open source software and collaboration should be a happy experience.*
 
-[GitHub Marketplace App](https://github.com/apps/comment-sentiment-analyzer)
+Get it now (for free) from the [GitHub Marketplace App](https://github.com/marketplace/comment-sentiment-analyzer)!
 
 [![Build and test](https://github.com/trstringer/comment-sentiment/actions/workflows/build_and_test.yaml/badge.svg?branch=main)](https://github.com/trstringer/comment-sentiment/actions/workflows/build_and_test.yaml)
 
